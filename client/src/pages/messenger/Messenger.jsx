@@ -3,8 +3,9 @@ import Topbar from '../../components/topbar/Topbar';
 import Conversation from '../../components/conversations/Conversation';
 import Message from '../../components/message/Message';
 import ChatOnline from '../../components/chatOnline/ChatOnline';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../../context/AuthContext';
+import { io } from 'socket.io-client';
 import axios from 'axios';
 
 export default function Messenger() {
@@ -12,7 +13,13 @@ export default function Messenger() {
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [socket, setSocket] = useState(null);
+  const scrollRef = useRef();
   const { user } = useContext(AuthContext);
+
+  useEffect(() => {
+    setSocket(io('ws://localhost:8900'));
+  }, []);
 
   useEffect(() => {
     const getConversations = async () => {
@@ -39,14 +46,26 @@ export default function Messenger() {
     };
     getMessages();
   }, [currentChat]);
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const message = {
       sender: user._id,
       text: newMessage,
       conversationId: currentChat._id,
     };
+    try {
+      const res = await axios.post('/messages', message);
+      console.log(res.data);
+      setMessages([...messages, res.data]);
+      setNewMessage('');
+    } catch (err) {
+      console.log(err);
+    }
   };
+
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
   return (
     <>
       <Topbar />
@@ -67,7 +86,9 @@ export default function Messenger() {
               <>
                 <div className="chatBoxTop">
                   {messages.map((m) => (
-                    <Message message={m} own={m.sender === user._id} />
+                    <div ref={scrollRef}>
+                      <Message message={m} own={m.sender === user._id} />
+                    </div>
                   ))}
                 </div>
                 <div className="chatBoxBottom">
