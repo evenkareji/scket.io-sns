@@ -1,7 +1,6 @@
 import axios from 'axios';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './conversation.css';
-import { AuthContext } from '../../context/AuthContext';
 
 export default function Conversation({ conversation, currentUser }) {
   const [user, setUser] = useState(null);
